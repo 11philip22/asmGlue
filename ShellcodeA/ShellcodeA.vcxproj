@@ -709,7 +709,7 @@
       </IgnoreEmbeddedIDL>
       <DataExecutionPrevention>
       </DataExecutionPrevention>
-      <EntryPointSymbol>LoadDLL</EntryPointSymbol>
+      <EntryPointSymbol>Run</EntryPointSymbol>
       <LinkErrorReporting>
       </LinkErrorReporting>
       <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>

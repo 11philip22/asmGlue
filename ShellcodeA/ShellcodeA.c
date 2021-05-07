@@ -5,20 +5,12 @@
 #include "GetProcAddressWithHash.h"
 
 #include <Windows.h>
-#include <winternl.h>
-#include <intrin.h>
-
-#define DEREF( name )*(UINT_PTR *)(name)
-#define DEREF_64( name )*(DWORD64 *)(name)
-#define DEREF_32( name )*(DWORD *)(name)
-#define DEREF_16( name )*(WORD *)(name)
-#define DEREF_8( name )*(BYTE *)(name)
 
 /** NOTE: module hashes are computed using all-caps unicode strings */
 #define LDRLOADDLL_HASH					0xbdbf9c13
 #define LDRGETPROCADDRESS_HASH			0x5ed941b5
 
-typedef int (WINAPI* MESSAGEBOXA)(HWND, LPSTR, LPSTR, UINT);
+typedef int (WINAPI* MESSAGEBOXW)(HWND, LPCWSTR, LPCWSTR, UINT);
 typedef NTSTATUS(WINAPI* LDRLOADDLL)(PWCHAR, ULONG, PUNICODE_STRING, PHANDLE);
 typedef NTSTATUS(WINAPI* LDRGETPROCADDRESS)(HMODULE, PANSI_STRING, WORD, PVOID*);
 
@@ -72,23 +64,23 @@ VOID Run()
 #pragma warning( disable : 4055 ) // Ignore cast warnings
 
 	// Function pointers
-	LDRLOADDLL pLdrLoadDll;
-	LDRGETPROCADDRESS pLdrGetProcAddress;
-	MESSAGEBOXA pMessageBoxA = NULL;
+	LDRLOADDLL pLdrLoadDll = NULL;
+	LDRGETPROCADDRESS pLdrGetProcAddress = NULL;
+	MESSAGEBOXW pMessageBoxW = NULL;
 
 	// General
-	HANDLE library;
+	HANDLE hUser32;
 	
 	// String
 	UNICODE_STRING uString = { 0 };
 	STRING aString = { 0 };
 
-	WCHAR sKernel32[] = { 'k', 'e', 'r', 'n', 'e', 'l', '3', '2', '.', 'd', 'l', 'l' };
-	CHAR msg[2] = { 'a','\0'};
-	
-	// At a certain length (15ish), the compiler with screw with inline
-	// strings declared as CHAR. No idea why, use BYTE to get around it.
-	BYTE sMessageBoxA[] = { 'M', 'e', 's', 's', 'a', 'g', 'e', 'B', 'o', 'x', 'A' };
+	WCHAR sUser32[] = { 'u', 's' ,'e' ,'r' ,'3' ,'2' ,'.' ,'d' ,'l' ,'l' };
+
+	BYTE sMessageBoxW[] = { 'M','e','s','s','a','g','e','B','o','x','W', 0 };
+
+	WCHAR sMsgContent[] = { 'H','e','l','l','o', ' ', 'W','o','r','l','d','!', 0 };
+	WCHAR sMsgTitle[] = { 'D','e','m','o','!', 0 };
 
 	///
 	// STEP 1: locate all the required functions
@@ -97,14 +89,18 @@ VOID Run()
 	pLdrLoadDll = (LDRLOADDLL)GetProcAddressWithHash(LDRLOADDLL_HASH);
 	pLdrGetProcAddress = (LDRGETPROCADDRESS)GetProcAddressWithHash(LDRGETPROCADDRESS_HASH);
 
-	uString.Buffer = sKernel32;
-	uString.MaximumLength = sizeof(sKernel32);
-	uString.Length = sizeof(sKernel32);
+	uString.Buffer = sUser32;
+	uString.MaximumLength = sizeof(sUser32);
+	uString.Length = sizeof(sUser32);
 
-	pLdrLoadDll(NULL, 0, &uString, &library);
+	pLdrLoadDll(NULL, 0, &uString, &hUser32);
 
-	FILL_STRING_WITH_BUF(aString, sMessageBoxA);
-	pLdrGetProcAddress(library, &aString, 0, (PVOID*)&pMessageBoxA);
+	FILL_STRING_WITH_BUF(aString, sMessageBoxW);
+	pLdrGetProcAddress(hUser32, &aString, 0, (PVOID*)&pMessageBoxW);
 
-	pMessageBoxA(NULL, msg, msg, 0x00004000L);
+	///
+	// STEP 2: pop messagebox
+	///
+
+	pMessageBoxW(NULL, sMsgContent, sMsgTitle, 0x00000000L);
 }
