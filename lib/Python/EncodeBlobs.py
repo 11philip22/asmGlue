@@ -6,9 +6,9 @@ StartMarker = 'MARKER:S'
 EndMarker  = 'MARKER:E'
 
 NativeTemplate = """
-    LPSTR rdiShellcode32 = "{}";
-    LPSTR rdiShellcode64 = "{}";
-    DWORD rdiShellcode32Length = {}, rdiShellcode64Length = {};
+    LPSTR shellCodeA32 = const_cast<LPSTR>("{}");
+    LPSTR shellCodeA64 = const_cast<LPSTR>("{}");
+    DWORD shellCodeA32Length = {}, shellCodeA64Length = {};
     """
 
 
@@ -17,10 +17,10 @@ def main():
     parser.add_argument('solution_dir', help='Solution Directory')
     arguments = parser.parse_args()
 
-    binFile32 = os.path.join(arguments.solution_dir, 'bin', 'ShellcodeRDI_x86.bin')
-    binFile64 = os.path.join(arguments.solution_dir, 'bin', 'ShellcodeRDI_x64.bin')
+    binFile32 = os.path.join(arguments.solution_dir, 'bin', 'ShellcodeA_x86.bin')
+    binFile64 = os.path.join(arguments.solution_dir, 'bin', 'ShellcodeA_x64.bin')
 
-    native_file = os.path.join(arguments.solution_dir, 'BeakeyBoi/Loader.cpp')
+    native_file = os.path.join(arguments.solution_dir, 'ShellShock/ShellShock.cpp')
 
     if not os.path.isfile(binFile32) or not os.path.isfile(binFile64):
         print("[!] ShellcodeRDI_x86.bin and ShellcodeRDI_x64.bin files weren't in the bin directory")

@@ -1,2 +1,2 @@
-LoadDLL
+Run
 GetProcAddressWithHash
