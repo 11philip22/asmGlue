@@ -29,13 +29,13 @@ BOOL ConvertToShellcode(LPSTR& outBytes, DWORD& outLength)
 	bootstrap[i++] = 0x00;
 	bootstrap[i++] = 0x00;
 	bootstrap[i++] = 0x00;
-
+	
 	// leave
 	//bootstrap[i++] = 0xc9;
 
 	// ret - return to caller
 	//bootstrap[i++] = 0xc3;
-
+	
 	// call - Transfer execution to shellCodeB
 	bootstrap[i++] = 0xe8;
 	bootstrap[i++] = sizeof(bootstrap) + shellcodeALength - i - 4; // Skip the remainder of instructions
@@ -82,7 +82,7 @@ int main()
 		SHC shc = (SHC)(finalShellcode);
 
 		printf("[+] Executing shell code\n");
-		HMODULE hLoadedShc = (HMODULE)shc(); // Excute DLL
+		HMODULE hLoadedShc = (HMODULE)shc(); // Excute shellcode
 
 		free(finalShellcode);
 		return 0;
