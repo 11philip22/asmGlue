@@ -36,7 +36,7 @@ VOID Run()
 	UNICODE_STRING uString = { 0 };
 	STRING aString = { 0 };
 
-	WCHAR sUser32[] = { 'u', 's' ,'e' ,'r' ,'3' ,'2' ,'.' ,'d' ,'l' ,'l' };
+	WCHAR sUser32[] = { 'u', 's', 'e', 'r', '3', '2', '.', 'd', 'l', 'l' };
 
 	BYTE sMessageBoxW[] = { 'M', 'e', 's', 's', 'a', 'g', 'e', 'B', 'o', 'x', 'W', 0 };
 
