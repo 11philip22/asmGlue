@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <fstream>
 
 #include "Windows.h"
 
@@ -66,27 +67,44 @@ typedef UINT_PTR(WINAPI* SHC)();
 
 int main()
 {
-	LPSTR finalShellcode = NULL;
-	DWORD finalSize;
-	DWORD dwOldProtect1 = 0;
-	SYSTEM_INFO sysInfo;
+	LPSTR			finalShellcode = NULL;
+	DWORD			finalSize;
+	DWORD			dwOldProtect1 = 0;
+	SYSTEM_INFO		sysInfo;
+	BOOL			status;
+	std::fstream	outFile;
+	DWORD			dLastError;
 	
-	if (!ConvertToShellcode(finalShellcode, finalSize)) {
+	status = ConvertToShellcode(finalShellcode, finalSize);
+	if (!status) {
 		printf("[!] Failed to convert shellcode\n");
-		return -1;
+		goto Cleanup;
 	}
+
+	outFile = std::fstream(R"(../bin/FinalShellcode_x86.bin)",
+		std::ios::out | std::ios::binary);
+	outFile.write(finalShellcode, finalSize);
+	outFile.close();
 
 	GetNativeSystemInfo(&sysInfo);
 
-	if (VirtualProtect(finalShellcode, sysInfo.dwPageSize, PAGE_EXECUTE_READWRITE, &dwOldProtect1)) {
+	status = VirtualProtect(finalShellcode, sysInfo.dwPageSize, PAGE_EXECUTE_READWRITE, &dwOldProtect1);
+		
+	if (status) {
 		SHC shc = (SHC)(finalShellcode);
 
 		printf("[+] Executing shell code\n");
 		HMODULE hLoadedShc = (HMODULE)shc(); // Excute shellcode
 
-		free(finalShellcode);
-		return 0;
+		status = 1;
+		goto Cleanup;
 	}
 
-	return -1;
+	dLastError = GetLastError();
+
+Cleanup:
+	if (finalShellcode)
+		free(finalShellcode);
+
+	return !status;
 }
