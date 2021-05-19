@@ -23,26 +23,22 @@ BOOL ConvertToShellcode(LPSTR& outBytes, DWORD& outLength)
 
 	BYTE bootstrap[12] = { 0 };
 	DWORD i = 0;
-
+	
 	// call - Transfer execution to shellCodeA
 	bootstrap[i++] = 0xe8;
-	bootstrap[i++] = sizeof(bootstrap) - i - 4; // Skip the remainder of instructions
-	bootstrap[i++] = 0x00;
-	bootstrap[i++] = 0x00;
-	bootstrap[i++] = 0x00;
-	
-	// leave
-	//bootstrap[i++] = 0xc9;
-
-	// ret - return to caller
-	//bootstrap[i++] = 0xc3;
+	DWORD shellcodeAOffset = sizeof(bootstrap) - i - 4;
+	bootstrap[i++] = (BYTE)shellcodeAOffset;
+	bootstrap[i++] = (BYTE)(shellcodeAOffset >> 8);
+	bootstrap[i++] = (BYTE)(shellcodeAOffset >> 16);
+	bootstrap[i++] = (BYTE)(shellcodeAOffset >> 24);
 	
 	// call - Transfer execution to shellCodeB
 	bootstrap[i++] = 0xe8;
-	bootstrap[i++] = sizeof(bootstrap) + shellcodeALength - i - 4; // Skip the remainder of instructions
-	bootstrap[i++] = 0x00;
-	bootstrap[i++] = 0x00;
-	bootstrap[i++] = 0x00;
+	DWORD shellcodeBOffset = sizeof(bootstrap) + shellcodeALength - i - 4;
+	bootstrap[i++] = (BYTE)shellcodeBOffset;
+	bootstrap[i++] = (BYTE)(shellcodeBOffset >> 8);
+	bootstrap[i++] = (BYTE)(shellcodeBOffset >> 16);
+	bootstrap[i++] = (BYTE)(shellcodeBOffset >> 24);
 
 	// leave
 	bootstrap[i++] = 0xc9;
@@ -89,7 +85,6 @@ int main()
 	GetNativeSystemInfo(&sysInfo);
 
 	status = VirtualProtect(finalShellcode, sysInfo.dwPageSize, PAGE_EXECUTE_READWRITE, &dwOldProtect1);
-		
 	if (status) {
 		SHC shc = (SHC)(finalShellcode);
 
