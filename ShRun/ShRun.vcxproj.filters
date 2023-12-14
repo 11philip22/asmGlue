@@ -15,13 +15,8 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ShellShock.cpp">
+    <ClCompile Include="ShRun.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="HexDump.h">
-      <Filter>Resource Files</Filter>
-    </ClInclude>
   </ItemGroup>
 </Project>

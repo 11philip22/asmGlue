@@ -64,4 +64,5 @@ VOID Run()
 	///
 
 	pMessageBoxW(NULL, sMsgContent, sMsgTitle, 0x00000000L);
+	return;
 }
