@@ -21,63 +21,30 @@ VOID ConvertToShellcode(LPSTR& outBytes, DWORD& outLength, BOOL bIs64Bit)
 	DWORD shellcodeALength = (bIs64Bit) ? shellCodeA64Length : shellCodeA32Length;
 	DWORD shellcodeBLength = (bIs64Bit) ? shellCodeB64Length : shellCodeB32Length;
 
-	BYTE bootstrap[30] = { 0 };
+	BYTE bootstrap[20] = { 0 };
 	DWORD i = 0;
 	
-	if (bIs64Bit)
-	{
-		// call - Transfer execution to shellCodeA
-		bootstrap[i++] = 0xe8;
-		ptrdiff_t shellcodeAOffset = sizeof(bootstrap) - i - 5;  // 5 bytes for the call instruction
-		bootstrap[i++] = (BYTE)shellcodeAOffset;
-		bootstrap[i++] = (BYTE)(shellcodeAOffset >> 8);
-		bootstrap[i++] = (BYTE)(shellcodeAOffset >> 16);
-		bootstrap[i++] = (BYTE)(shellcodeAOffset >> 24);
-		bootstrap[i++] = (BYTE)(shellcodeAOffset >> 32);
-		bootstrap[i++] = (BYTE)(shellcodeAOffset >> 40);
-		bootstrap[i++] = (BYTE)(shellcodeAOffset >> 48);
-		bootstrap[i++] = (BYTE)(shellcodeAOffset >> 56);  // 64 bit address space
+	// call - Transfer execution to shellCodeA
+	bootstrap[i++] = 0xe8;
+	ptrdiff_t shellcodeAOffset = sizeof(bootstrap) - i - 4;  // 4 bytes for the call instruction
+	bootstrap[i++] = (BYTE)shellcodeAOffset;
+	bootstrap[i++] = (BYTE)(shellcodeAOffset >> 8);
+	bootstrap[i++] = (BYTE)(shellcodeAOffset >> 16);
+	bootstrap[i++] = (BYTE)(shellcodeAOffset >> 24);  // 32 bit address space
 
-		bootstrap[i++] = 0xe8;
-		ptrdiff_t shellcodeBOffset = sizeof(bootstrap) + shellcodeALength - i - 5;  // 5 bytes for the call instruction
-		bootstrap[i++] = (BYTE)shellcodeBOffset;
-		bootstrap[i++] = (BYTE)(shellcodeBOffset >> 8);
-		bootstrap[i++] = (BYTE)(shellcodeBOffset >> 16);
-		bootstrap[i++] = (BYTE)(shellcodeBOffset >> 24);
-		bootstrap[i++] = (BYTE)(shellcodeBOffset >> 32);
-		bootstrap[i++] = (BYTE)(shellcodeBOffset >> 40);
-		bootstrap[i++] = (BYTE)(shellcodeBOffset >> 48);
-		bootstrap[i++] = (BYTE)(shellcodeBOffset >> 56);  // 64 bit address space
+	// call - Transfer execution to shellCodeB
+	bootstrap[i++] = 0xe8;
+	ptrdiff_t shellcodeBOffset = sizeof(bootstrap) + shellcodeALength - i - 4;  // 4 bytes for the call instruction
+	bootstrap[i++] = (BYTE)shellcodeBOffset;
+	bootstrap[i++] = (BYTE)(shellcodeBOffset >> 8);
+	bootstrap[i++] = (BYTE)(shellcodeBOffset >> 16);
+	bootstrap[i++] = (BYTE)(shellcodeBOffset >> 24);  // 32 bit address space
 
-		printf("ShellcodeA offset: %i\n", shellcodeAOffset);
-		printf("ShellcodeB offset: %i\n", shellcodeBOffset);
-		printf("Bootstrap: \n");
-		HexDump(bootstrap, i);
-	}
-	else 
-	{
-		// call - Transfer execution to shellCodeA
-		bootstrap[i++] = 0xe8;
-		ptrdiff_t shellcodeAOffset = sizeof(bootstrap) - i - 4;  // 4 bytes for the call instruction
-		bootstrap[i++] = (BYTE)shellcodeAOffset;
-		bootstrap[i++] = (BYTE)(shellcodeAOffset >> 8);
-		bootstrap[i++] = (BYTE)(shellcodeAOffset >> 16);
-		bootstrap[i++] = (BYTE)(shellcodeAOffset >> 24);  // 32 bit address space
-
-		// call - Transfer execution to shellCodeB
-		bootstrap[i++] = 0xe8;
-		ptrdiff_t shellcodeBOffset = sizeof(bootstrap) + shellcodeALength - i - 4;  // 4 bytes for the call instruction
-		bootstrap[i++] = (BYTE)shellcodeBOffset;
-		bootstrap[i++] = (BYTE)(shellcodeBOffset >> 8);
-		bootstrap[i++] = (BYTE)(shellcodeBOffset >> 16);
-		bootstrap[i++] = (BYTE)(shellcodeBOffset >> 24);  // 32 bit address space
-
-		printf("ShellcodeA offset: %i\n", shellcodeAOffset);
-		printf("ShellcodeB offset: %i\n", shellcodeBOffset);
-		printf("Bootstrap: \n");
-		HexDump(bootstrap, i);
-	}
-
+	printf("ShellcodeA offset: %d\n", shellcodeAOffset);
+	printf("ShellcodeB offset: %d\n", shellcodeBOffset);
+	printf("Bootstrap: \n");
+	HexDump(bootstrap, i);
+	
 	//// leave
 	//bootstrap[i++] = 0xc9;
 
@@ -91,7 +58,8 @@ VOID ConvertToShellcode(LPSTR& outBytes, DWORD& outLength, BOOL bIs64Bit)
 	// ret
 	outLength = sizeof(bootstrap) + shellcodeALength + shellcodeBLength;
 	outBytes = (LPSTR)malloc(outLength);
-	MoveMemory(outBytes, bootstrap, sizeof(bootstrap));
+	//MoveMemory(outBytes, bootstrap, sizeof(bootstrap));
+	MoveMemory(outBytes, bootstrap, i);
 	MoveMemory(outBytes + sizeof(bootstrap), shellcodeA, shellcodeALength);
 	MoveMemory(outBytes + sizeof(bootstrap) + shellcodeALength, shellcodeB, shellcodeBLength);
 }
@@ -100,30 +68,31 @@ typedef VOID(WINAPI* SHC)();
 
 int main()
 {
+	///
+	// Create shellcode
+	///
 	LPSTR			finalShellcode = NULL;
 	DWORD			finalSize = 0;
-	DWORD			dwOldProtect1 = 0;
-	SYSTEM_INFO		sysInfo = { 0 };
-	DWORD 			dwStatus = 0;
-	BOOL			bRet = FALSE;
-	std::fstream	outFile;
-	SHC				shc = NULL;
-	HMODULE			hLoadedShc = NULL;
 	
 #ifdef _WIN64 
 	ConvertToShellcode(finalShellcode, finalSize, TRUE);
 
-	outFile = std::fstream(R"(../bin/FinalShellcode_x64.bin)", std::ios::out | std::ios::binary);
+	std::fstream outFile = std::fstream(R"(../bin/FinalShellcode_x64.bin)", std::ios::out | std::ios::binary);
 #else
 	ConvertToShellcode(finalShellcode, finalSize, FALSE);
 
-	outFile = std::fstream(R"(../bin/FinalShellcode_x86.bin)", std::ios::out | std::ios::binary);
+	std::fstream outFile = std::fstream(R"(../bin/FinalShellcode_x86.bin)", std::ios::out | std::ios::binary);
 #endif
 	outFile.write(finalShellcode, finalSize);
 	outFile.close();
 
+	///
+	// Set protections
+	///
+	SYSTEM_INFO	sysInfo = { 0 };
 	GetNativeSystemInfo(&sysInfo);
-	bRet = VirtualProtect(finalShellcode, sysInfo.dwPageSize, PAGE_EXECUTE_READWRITE, &dwOldProtect1);
+	DWORD dwOldProtect1;
+	BOOL bRet = VirtualProtect(finalShellcode, sysInfo.dwPageSize, PAGE_EXECUTE_READWRITE, &dwOldProtect1);
 	if (!bRet)
 	{
 		printf("Could not set protection");
@@ -131,11 +100,14 @@ int main()
 		return GetLastError();
 	}
 
-	shc = (SHC)(finalShellcode);
+	///
+	// Execute shellcode
+	///
+	SHC shc = (SHC)(finalShellcode);
 
 	printf("[+] Executing shell code\n");
 	shc(); // Excute shellcode
+	
 	free(finalShellcode);
-
-	return dwStatus;
+	return 0;
 }
